@@ -9,9 +9,15 @@ import pickle
 from tqdm import tqdm
 import yaml
 
+import os  # 导入os模块处理路径
+
 def load_params():
-    """加载DVC参数"""
-    with open('params.yaml', 'r') as f:
+    """加载ml目录下的params.yaml"""
+    # 获取当前脚本（prepare_data.py）所在目录的绝对路径
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    # 拼接得到params.yaml的完整路径
+    params_path = os.path.join(script_dir, 'params.yaml')
+    with open(params_path, 'r') as f:
         return yaml.safe_load(f)
 
 def prepare_data():
