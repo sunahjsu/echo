@@ -23,11 +23,9 @@ jobs:
         pip install -r requirements.txt
         pip install dagshub dvc pytest
 
-    
-
     - name: Run unit tests
       run: |
-        python test_retrieval.py
+        python test_retrieval.py  # 现在在根目录
         pytest test_app.py -v
 
     - name: Run evaluation

@@ -29,6 +29,11 @@ class PCASVMImageRetrieval:
         self.labels = []
         self.filenames = []
         
+        # 检查数据集目录是否存在
+        if not os.path.exists(self.dataset_path):
+            print(f"警告: 数据集目录 {self.dataset_path} 不存在，创建空数据集")
+            return self
+            
         for class_name in os.listdir(self.dataset_path):
             class_path = os.path.join(self.dataset_path, class_name)
             if os.path.isdir(class_path):
