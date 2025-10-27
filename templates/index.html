@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图像检索系统</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .image-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin: 20px 0; }
+        .image-item { border: 1px solid #ddd; padding: 10px; text-align: center; cursor: pointer; }
+        .image-item:hover { background-color: #f5f5f5; }
+        .image-item img { max-width: 100%; height: 150px; object-fit: cover; }
+        .results { margin-top: 30px; }
+        .result-section { margin-bottom: 30px; }
+        .selected { border: 3px solid #007bff; }
+        .loading { display: none; text-align: center; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>基于PCA-SVM的图像检索系统</h1>
+        
+        <div>
+            <h2>选择查询图像：</h2>
+            <div id="imageList" class="image-grid"></div>
+        </div>
+
+        <div class="loading" id="loading">
+            <p>正在检索相似图像...</p>
+        </div>
+
+        <div class="results" id="results" style="display: none;">
+            <h2>检索结果</h2>
+            
+            <div class="result-section">
+                <h3 id="pcaTitle"></h3>
+                <div id="pcaResults" class="image-grid"></div>
+            </div>
+            
+            <div class="result-section">
+                <h3 id="originalTitle"></h3>
+                <div id="originalResults" class="image-grid"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 加载图像列表
+        fetch('/images')
+            .then(response => response.json())
+            .then(data => {
+                const imageList = document.getElementById('imageList');
+                data.images.forEach(image => {
+                    const imageItem = document.createElement('div');
+                    imageItem.className = 'image-item';
+                    imageItem.dataset.id = image.id;
+                    imageItem.dataset.path = image.path;
+                    
+                    imageItem.innerHTML = `
+                        <img src="file://${image.path}" alt="${image.label}">
+                        <p>${image.label}</p>
+                    `;
+                    
+                    imageItem.addEventListener('click', () => selectImage(imageItem));
+                    imageList.appendChild(imageItem);
+                });
+            });
+
+        let selectedImage = null;
+
+        function selectImage(imageItem) {
+            if (selectedImage) {
+                selectedImage.classList.remove('selected');
+            }
+            imageItem.classList.add('selected');
+            selectedImage = imageItem;
+            
+            retrieveSimilarImages(imageItem.dataset.path);
+        }
+
+        function retrieveSimilarImages(queryImagePath) {
+            const loading = document.getElementById('loading');
+            const results = document.getElementById('results');
+            
+            loading.style.display = 'block';
+            results.style.display = 'none';
+
+            fetch('/retrieve', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    query_image: queryImagePath
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                loading.style.display = 'none';
+                results.style.display = 'block';
+                
+                if (data.success) {
+                    displayResults(data.pca_result, 'pca');
+                    displayResults(data.original_result, 'original');
+                } else {
+                    alert('检索失败: ' + data.error);
+                }
+            })
+            .catch(error => {
+                loading.style.display = 'none';
+                alert('请求失败: ' + error);
+            });
+        }
+
+        function displayResults(result, type) {
+            const titleElement = document.getElementById(type + 'Title');
+            const resultsElement = document.getElementById(type + 'Results');
+            
+            titleElement.textContent = `${result.method} - 准确率: ${(result.accuracy * 100).toFixed(1)}% - 耗时: ${result.retrieval_time.toFixed(3)}秒`;
+            
+            resultsElement.innerHTML = '';
+            result.results.forEach((item, index) => {
+                const [idx, dist] = item;
+                const imagePath = retrievalSystem.filenames[idx];
+                const label = retrievalSystem.labels[idx];
+                
+                const resultItem = document.createElement('div');
+                resultItem.className = 'image-item';
+                resultItem.innerHTML = `
+                    <img src="file://${imagePath}" alt="${label}">
+                    <p>${label}</p>
+                    <small>距离: ${dist.toFixed(2)}</small>
+                `;
+                resultsElement.appendChild(resultItem);
+            });
+        }
+
+        // 全局变量用于存储系统信息（在实际应用中应该从服务器获取）
+        const retrievalSystem = {
+            filenames: [],
+            labels: []
+        };
+
+        // 初始化系统信息
+        fetch('/images')
+            .then(response => response.json())
+            .then(data => {
+                data.images.forEach(image => {
+                    retrievalSystem.filenames.push(image.path);
+                    retrievalSystem.labels.push(image.label);
+                });
+            });
+    </script>
+</body>
+</html>
