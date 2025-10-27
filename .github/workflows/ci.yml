@@ -23,14 +23,11 @@ jobs:
         pip install -r requirements.txt
         pip install dagshub dvc pytest
 
-
-    - name: Prepare data
+    - name: Initialize DVC and pull data
       run: |
-        python prepare_data.py
-
-    - name: Train PCA model
-      run: |
-        python train_pca.py
+        dvc init --no-scm
+        dvc pull  # 拉取数据集（需确保DVC远程配置正确）
+        dvc repro  # 执行数据处理和模型训练流水线
 
     - name: Run unit tests
       run: |
