@@ -1,0 +1,69 @@
+# DVC流水线定义
+stages:
+  prepare:
+    cmd: python scripts/prepare_data.py
+    deps:
+      - scripts/prepare_data.py
+      - ${data.path}
+    params:
+      - data.path
+      - preprocess.image_size
+      - preprocess.grayscale
+      - preprocess.normalize
+    outs:
+      - data/processed/images.npy
+      - data/processed/labels.npy
+      - data/processed/image_paths.pkl
+
+  train_pca:
+    cmd: python scripts/train_pca.py
+    deps:
+      - scripts/train_pca.py
+      - src/
+      - data/processed/images.npy
+    params:
+      - pca.n_components
+      - pca.random_state
+    outs:
+      - models/pca_model.pkl
+      - models/scaler.pkl
+      - data/processed/images_pca.npy
+    metrics:
+      - models/pca_metrics.json:
+          cache: false
+
+  evaluate:
+    cmd: python scripts/evaluate_retrieval.py
+    deps:
+      - scripts/evaluate_retrieval.py
+      - src/
+      - data/processed/images.npy
+      - data/processed/images_pca.npy
+      - data/processed/labels.npy
+    params:
+      - retrieval.top_k
+      - retrieval.distance_metric
+      - evaluation.n_queries
+      - evaluation.random_state
+    metrics:
+      - results/evaluation_metrics.json:
+          cache: false
+    plots:
+      - results/accuracy_comparison.png:
+          cache: false
+      - results/speed_comparison.png:
+          cache: false
+
+  mlflow_track:
+    cmd: python scripts/track_experiment.py
+    deps:
+      - scripts/track_experiment.py
+      - src/
+      - models/pca_model.pkl
+      - results/evaluation_metrics.json
+    params:
+      - mlflow.tracking_uri
+      - mlflow.experiment_name
+    metrics:
+      - mlruns/experiment_info.json:
+          cache: false
