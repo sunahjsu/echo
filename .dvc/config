@@ -1,2 +1,6 @@
 [core]
     remote = dagshub
+['remote "origin"']
+    url = https://dagshub.com/sunahjsu/echo.dvc
+['remote "dagshub"']
+    url = https://dagshub.com/sunahjsu/echo.dvc
