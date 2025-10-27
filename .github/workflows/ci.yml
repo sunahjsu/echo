@@ -5,38 +5,57 @@ on:
     branches: [ main ]
 
 jobs:
-  test:
+  build-and-test:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - uses: actions/checkout@v4
-    
+    - name: Checkout code
+      uses: actions/checkout@v4
+
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.9'  
-    
+        python-version: '3.8'
+
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements.txt  
-        pip install pytest mlflow dagshub flask scikit-learn numpy  
-    
-    - name: Prepare test environment
+        pip install -r requirements.txt
+        pip install dagshub dvc pytest
+
+    - name: Initialize DVC
       run: |
-        
-        mkdir -p tests/test_data
-        
-        
+        python init_dvc.py
+
+    - name: Prepare data
+      run: |
+        python prepare_data.py
+
+    - name: Train PCA model
+      run: |
+        python train_pca.py
+
     - name: Run unit tests
       run: |
-        pytest test_retrieval.py -v  
-    
-    - name: Run application tests
+        python test_retrieval.py
+        pytest test_app.py -v
+
+    - name: Run evaluation
       run: |
-        pytest test_app.py -v  
-    
-    - name: Check code style (可选)
+        python evaluate_retrieval.py
+
+    - name: Check application startup
       run: |
-        pip install flake8
-        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        python app.py &
+        sleep 10  # 等待应用启动
+        curl -f http://localhost:5000/health || exit 1
+        curl -f http://localhost:5000/model-info || exit 1
+        pkill -f "python app.py"
+
+    - name: Upload evaluation results
+      uses: actions/upload-artifact@v4
+      with:
+        name: evaluation-results
+        path: |
+          results/
+          models/pca_metrics.json
