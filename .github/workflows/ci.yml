@@ -23,9 +23,6 @@ jobs:
         pip install -r requirements.txt
         pip install dagshub dvc pytest
 
-    - name: Initialize DVC
-      run: |
-        python init_dvc.py
 
     - name: Prepare data
       run: |
