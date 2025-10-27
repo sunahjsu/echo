@@ -1,6 +1,6 @@
 # DVC参数配置文件
 data:
-  path: "C:/Users/10385/Desktop/echo/tests/test_data/Corel-1000"
+  path: "./Corel-1000"
   test_size: 0.2
   random_state: 42
 
