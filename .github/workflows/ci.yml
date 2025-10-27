@@ -1,34 +1,49 @@
 name: CI Pipeline
 
-on: [push, pull_request]
+on:
+  pull_request:
+    branches: [ main ]
 
 jobs:
-  test:
+  build-and-test:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - uses: actions/checkout@v3
-    
+    - name: Checkout code
+      uses: actions/checkout@v4
+
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.9'
-    
+
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-        pip install pytest pytest-cov
-    
-    - name: Lint
+        pip install dagshub dvc pytest
+
+    - name: Run unit tests
       run: |
-        pip install flake8
-        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-    
-    - name: Test
+        python test_retrieval.py  # 现在在根目录
+        pytest test_app.py -v
+
+    - name: Run evaluation
       run: |
-        python -m pytest tests/ -v --cov=src
-    
-    - name: Build Docker image
+        python evaluate_retrieval.py
+
+    - name: Check application startup
       run: |
-        docker build -t image-retrieval .
+        python app.py &
+        sleep 10  # 等待应用启动
+        curl -f http://localhost:5000/health || exit 1
+        curl -f http://localhost:5000/model-info || exit 1
+        pkill -f "python app.py"
+
+    - name: Upload evaluation results
+      uses: actions/upload-artifact@v4
+      with:
+        name: evaluation-results
+        path: |
+          results/
+          models/pca_metrics.json

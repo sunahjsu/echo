@@ -1,9 +1,9 @@
 # DVC流水线定义
 stages:
   prepare:
-    cmd: python scripts/prepare_data.py
+    cmd: python prepare_data.py
     deps:
-      - scripts/prepare_data.py
+      - prepare_data.py
       - ${data.path}
     params:
       - data.path
@@ -16,9 +16,9 @@ stages:
       - data/processed/image_paths.pkl
 
   train_pca:
-    cmd: python scripts/train_pca.py
+    cmd: python train_pca.py
     deps:
-      - scripts/train_pca.py
+      - train_pca.py
       - src/
       - data/processed/images.npy
     params:
@@ -33,9 +33,9 @@ stages:
           cache: false
 
   evaluate:
-    cmd: python scripts/evaluate_retrieval.py
+    cmd: python evaluate_retrieval.py
     deps:
-      - scripts/evaluate_retrieval.py
+      - evaluate_retrieval.py
       - src/
       - data/processed/images.npy
       - data/processed/images_pca.npy
@@ -55,9 +55,9 @@ stages:
           cache: false
 
   mlflow_track:
-    cmd: python scripts/track_experiment.py
+    cmd: python track_experiment.py
     deps:
-      - scripts/track_experiment.py
+      - track_experiment.py
       - src/
       - models/pca_model.pkl
       - results/evaluation_metrics.json

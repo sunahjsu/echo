@@ -1,0 +1,6 @@
+# 数据目录 - 通过DVC管理
+/processed/
+/interim/
+/external/
+!/Corel-1000.dvc
+!README.md
